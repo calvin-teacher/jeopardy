@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y7 Physics Jeopardy</title>
+    
+    <style>
+        /* General Body and Font Styles */
+        :root {
+            --primary-bg: #0d1b2a;
+            --secondary-bg: #1b263b;
+            --card-bg: #415a77;
+            --text-light: #e0e1dd;
+            --accent-yellow: #fca311;
+            --accent-blue: #14213d;
+            --accent-green: #a7c957;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align top */
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        h1 {
+            font-family: 'Georgia', serif;
+            font-size: 2.5rem;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        h2 { color: var(--accent-yellow); }
+
+        /* Screen visibility classes */
+        .screen { display: none; width: 100%; padding: 20px; box-sizing: border-box; }
+        .screen.active { display: block; }
+
+        /* Setup Screen Styles */
+        #setup-screen {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .setup-section { margin-bottom: 20px; }
+        #class-list {
+            width: 90%;
+            height: 150px;
+            padding: 10px;
+            border: 2px solid var(--card-bg);
+            border-radius: 5px;
+            background-color: var(--primary-bg);
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+        .team-option { margin: 0 10px; font-size: 1.2rem; }
+        #team-assignments {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .team-list {
+            background-color: var(--primary-bg);
+            padding: 10px;
+            border-radius: 5px;
+            flex-basis: 22%;
+            min-width: 150px;
+        }
+        .team-list h3 { margin-top: 0; color: var(--accent-yellow); }
+        .team-list ul { list-style-type: none; padding: 0; }
+
+        /* Buttons */
+        button {
+            background-color: var(--accent-yellow);
+            color: var(--accent-blue);
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+            margin: 5px;
+        }
+        button:hover { background-color: #e85d04; }
+        button:disabled { background-color: #b08447; cursor: not-allowed; opacity: 0.6; }
+        .button-group { margin-top: 20px; }
+        .correct-btn { background-color: #2a9d8f; color: white; }
+        .correct-btn:hover { background-color: #264653; }
+        .incorrect-btn { background-color: #e76f51; color: white; }
+        .incorrect-btn:hover { background-color: #f4a261; }
+        
+        /* Game Screen Header */
+        #game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #game-header h1 { margin: 10px 0; }
+
+        /* Game Board Styles */
+        #game-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
+        .category-title { background-color: var(--accent-blue); font-weight: bold; font-size: 1rem; padding: 10px; border-radius: 5px; display: flex; justify-content: center; align-items: center; min-height: 70px; }
+        .question-tile { background-color: var(--card-bg); color: var(--accent-yellow); font-size: 2rem; font-weight: bold; cursor: pointer; border-radius: 5px; display: flex; justify-content: center; align-items: center; height: 90px; transition: transform 0.2s; }
+        .question-tile:hover { transform: scale(1.05); }
+        .question-tile.answered { background-color: var(--secondary-bg); color: var(--card-bg); cursor: not-allowed; transform: none; }
+
+        /* Scoreboard Styles */
+        #scoreboard { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .player-scorecard { background-color: var(--secondary-bg); padding: 15px; border-radius: 8px; min-width: 180px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        .player-name { font-size: 1.1rem; font-weight: bold; color: var(--accent-yellow); }
+        .player-score { font-size: 1.8rem; margin: 10px 0; }
+        
+        /* Modal Styles */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background-color: var(--accent-blue); padding: 30px; border: 5px solid var(--accent-yellow); border-radius: 10px; width: 90%; max-width: 700px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .modal-hidden { display: none !important; }
+        
+        #question-text { font-size: 1.8rem; margin-bottom: 20px; }
+        #answer-text { font-size: 1.4rem; color: var(--accent-green); font-style: italic; margin-bottom: 30px; }
+        #answer-attribution { margin: 20px 0; }
+        #player-select { padding: 8px; border-radius: 5px; font-size: 1rem; margin-right: 10px; }
+        
+        /* Log Modal Styles */
+        #log-content {
+            background-color: var(--primary-bg);
+            text-align: left;
+            padding: 15px;
+            border-radius: 5px;
+            height: 40vh;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        /* Helper classes */
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="setup-screen" class="screen active">
+        <h1>Physics Jeopardy!</h1>
+        <div class="setup-section">
+            <h2>1. Paste Class List</h2>
+            <textarea id="class-list" placeholder="Paste one name per line..."></textarea>
+        </div>
+        <div class="setup-section">
+            <h2>2. Choose Number of Teams</h2>
+            <label class="team-option"><input type="radio" name="num-teams" value="2" checked> 2</label>
+            <label class="team-option"><input type="radio" name="num-teams" value="3"> 3</label>
+            <label class="team-option"><input type="radio" name="num-teams" value="4"> 4</label>
+        </div>
+        <button id="sort-teams-btn">Create Teams</button>
+        <div id="team-assignments"></div>
+        <div class="button-group">
+            <button id="start-game-btn" disabled>Start Game</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <header id="game-header">
+            <h1>Y7 Physics Jeopardy</h1>
+            <button id="view-log-btn">View Log</button>
+        </header>
+        <div id="game-board"></div>
+        <div id="scoreboard"></div>
+    </div>
+</div>
+
+<div id="question-modal" class="modal modal-hidden">
+    <div class="modal-content">
+        <p id="question-text"></p>
+        <p id="answer-text" class="hidden"></p>
+        <div id="answer-attribution">
+            <select id="player-select">
+                <option value="">-- Select Student --</option>
+            </select>
+            <button id="correct-btn" class="correct-btn">Correct</button>
+            <button id="incorrect-btn" class="incorrect-btn">Incorrect</button>
+        </div>
+        <div class="modal-buttons">
+            <button id="reveal-answer-btn">Reveal Answer</button>
+            <button id="close-modal-btn">Close & Continue</button>
+        </div>
+    </div>
+</div>
+
+<div id="log-modal" class="modal modal-hidden">
+    <div class="modal-content">
+        <h2>Correct Answers Log</h2>
+        <div id="log-content"></div>
+        <div class="modal-buttons">
+            <button id="copy-log-btn">Copy Log</button>
+            <button id="close-log-btn">Close</button>
+        </div>
+    </div>
+</div>
+    
+<script>
+    // --- TRIVIA DATA ---
+    const gameData = {
+        categories: ["Forces & Motion", "Energy", "Light & Sound", "Space", "Electricity"],
+        questions: [
+            { q: "This force pulls objects towards the center of the Earth.", a: "What is gravity?" }, { q: "The unit used to measure force is named after this famous scientist.", a: "Who is Isaac Newton?" }, { q: "This is the resistance an object has to a change in its state of motion.", a: "What is inertia?" }, { q: "This type of friction occurs between air and a moving object.", a: "What is air resistance (or drag)?" }, { q: "What is the formula for calculating speed?", a: "What is Speed = Distance ÷ Time?" },
+            { q: "This is the energy of a moving object.", a: "What is kinetic energy?" }, { q: "This is stored energy, ready to be used.", a: "What is potential energy?" }, { q: "Energy cannot be created or destroyed, only transferred. This is the law of...", a: "What is the Conservation of Energy?" }, { q: "Fossil fuels are an example of this type of energy resource.", a: "What is a non-renewable resource?" }, { q: "The Sun provides the Earth with these two main forms of energy.", a: "What are light and heat energy?" },
+            { q: "This is how light travels from a source.", a: "In straight lines." }, { q: "Sound is caused by these.", a: "What are vibrations?" }, { q: "This is when light bounces off a surface, like a mirror.", a: "What is reflection?" }, { q: "Sound travels fastest through which state of matter: solid, liquid, or gas?", a: "What is a solid?" }, { q: "This splits white light into the colors of the rainbow.", a: "What is a prism?" },
+            { q: "Our solar system is in this galaxy.", a: "What is the Milky Way?" }, { q: "This is the name for a natural satellite that orbits a planet.", a: "What is a moon?" }, { q: "How long does it take for the Earth to orbit the Sun once?", a: "What is one year (or 365.25 days)?" }, { q: "A piece of rock or metal that burns up upon entering Earth's atmosphere is called this.", a: "What is a meteor (or shooting star)?" }, { q: "What causes the seasons on Earth?", a: "What is the tilt of the Earth's axis?" },
+            { q: "This is the flow of electrons through a conductor.", a: "What is an electric current?" }, { q: "A material that does not allow electricity to pass through it is called this.", a: "What is an insulator?" }, { q: "For a light bulb to light up, it must be part of a complete or _______ circuit.", a: "What is a closed circuit?" }, { q: "This device can be used to open or close a circuit.", a: "What is a switch?" }, { q: "Two north poles of a magnet will do this when brought together.", a: "What is repel each other?" },
+        ]
+    };
+
+    // --- DOM ELEMENT REFERENCES ---
+    const setupScreen = document.getElementById('setup-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const sortTeamsBtn = document.getElementById('sort-teams-btn');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const classListInput = document.getElementById('class-list');
+    const teamAssignmentsDiv = document.getElementById('team-assignments');
+    
+    const gameBoard = document.getElementById('game-board');
+    const scoreboard = document.getElementById('scoreboard');
+
+    // Question Modal
+    const questionModal = document.getElementById('question-modal');
+    const questionText = document.getElementById('question-text');
+    const answerText = document.getElementById('answer-text');
+    const revealAnswerBtn = document.getElementById('reveal-answer-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const playerSelect = document.getElementById('player-select');
+    const correctBtn = document.getElementById('correct-btn');
+    const incorrectBtn = document.getElementById('incorrect-btn');
+
+    // Log Modal
+    const logModal = document.getElementById('log-modal');
+    const viewLogBtn = document.getElementById('view-log-btn');
+    const closeLogBtn = document.getElementById('close-log-btn');
+    const copyLogBtn = document.getElementById('copy-log-btn');
+    const logContent = document.getElementById('log-content');
+
+    // --- GAME STATE ---
+    let teams = [];
+    let allPlayersSorted = [];
+    let answerLog = [];
+    let currentQuestionData = {};
+    const pointValues = [100, 200, 300, 400, 500];
+
+    // --- EVENT LISTENERS ---
+    sortTeamsBtn.addEventListener('click', sortStudentsIntoTeams);
+    startGameBtn.addEventListener('click', startGame);
+    gameBoard.addEventListener('click', handleTileClick);
+    
+    // Question Modal Listeners
+    revealAnswerBtn.addEventListener('click', () => answerText.classList.remove('hidden'));
+    closeModalBtn.addEventListener('click', () => questionModal.classList.add('modal-hidden'));
+    correctBtn.addEventListener('click', () => handleAnswer(true));
+    incorrectBtn.addEventListener('click', () => handleAnswer(false));
+    
+    // Log Modal Listeners
+    viewLogBtn.addEventListener('click', showLog);
+    closeLogBtn.addEventListener('click', () => logModal.classList.add('modal-hidden'));
+    copyLogBtn.addEventListener('click', copyLog);
+
+    // --- FUNCTIONS ---
+
+    /**
+     * Shuffles an array in place.
+     * @param {Array} array The array to shuffle.
+     */
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    
+    /**
+     * Reads the class list, shuffles it, and divides students into teams.
+     */
+    function sortStudentsIntoTeams() {
+        const names = classListInput.value.split('\n').map(name => name.trim()).filter(name => name);
+        if (names.length === 0) {
+            alert("Please paste a list of names.");
+            return;
+        }
+
+        shuffleArray(names);
+        
+        const numTeams = parseInt(document.querySelector('input[name="num-teams"]:checked').value);
+        teams = Array.from({ length: numTeams }, (_, i) => ({ name: `Team ${i + 1}`, score: 0, members: [] }));
+
+        names.forEach((name, index) => {
+            teams[index % numTeams].members.push(name);
+        });
+        
+        allPlayersSorted = names.sort();
+
+        // Display the teams on the setup screen
+        teamAssignmentsDiv.innerHTML = '';
+        teams.forEach(team => {
+            const teamDiv = document.createElement('div');
+            teamDiv.classList.add('team-list');
+            const membersList = team.members.map(m => `<li>${m}</li>`).join('');
+            teamDiv.innerHTML = `<h3>${team.name}</h3><ul>${membersList}</ul>`;
+            teamAssignmentsDiv.appendChild(teamDiv);
+        });
+
+        startGameBtn.disabled = false;
+    }
+
+    /**
+     * Initializes the game screen.
+     */
+    function startGame() {
+        if (teams.length === 0) {
+            alert("Please create teams first!");
+            return;
+        }
+        setupScreen.classList.remove('active');
+        gameScreen.classList.add('active');
+
+        // Populate the student dropdown in the modal
+        playerSelect.innerHTML = '<option value="">-- Select Student --</option>';
+        allPlayersSorted.forEach(player => {
+            const option = document.createElement('option');
+            option.value = player;
+            option.textContent = player;
+            playerSelect.appendChild(option);
+        });
+
+        buildBoard();
+        updateScoreboard();
+    }
+    
+    /**
+     * Creates the game board grid in the DOM.
+     */
+    function buildBoard() {
+        gameBoard.innerHTML = '';
+        gameData.categories.forEach(cat => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.classList.add('category-title');
+            categoryDiv.textContent = cat;
+            gameBoard.appendChild(categoryDiv);
+        });
+
+        for (let i = 0; i < pointValues.length; i++) {
+            for (let j = 0; j < gameData.categories.length; j++) {
+                const questionIndex = j * pointValues.length + i;
+                const tile = document.createElement('div');
+                tile.classList.add('question-tile');
+                tile.textContent = `$${pointValues[i]}`;
+                tile.dataset.questionIndex = questionIndex;
+                tile.dataset.pointValue = pointValues[i];
+                gameBoard.appendChild(tile);
+            }
+        }
+    }
+    
+    /**
+     * Updates the scoreboard with current team names and scores.
+     */
+    function updateScoreboard() {
+        scoreboard.innerHTML = '';
+        teams.forEach(team => {
+            const scorecard = document.createElement('div');
+            scorecard.classList.add('player-scorecard');
+            scorecard.innerHTML = `
+                <div class="player-name">${team.name}</div>
+                <div class="player-score">${team.score}</div>
+            `;
+            scoreboard.appendChild(scorecard);
+        });
+    }
+
+    /**
+     * Handles clicks on the question tiles.
+     * @param {Event} e The click event.
+     */
+    function handleTileClick(e) {
+        const tile = e.target;
+        if (!tile.classList.contains('question-tile') || tile.classList.contains('answered')) {
+            return;
+        }
+        
+        tile.classList.add('answered');
+        tile.textContent = '';
+        
+        const questionIndex = parseInt(tile.dataset.questionIndex);
+        const pointValue = parseInt(tile.dataset.pointValue);
+        const questionData = gameData.questions[questionIndex];
+        
+        // Store current question info for logging and scoring
+        currentQuestionData = {
+            question: questionData.q,
+            points: pointValue
+        };
+
+        // Populate and show modal
+        questionText.textContent = questionData.q;
+        answerText.textContent = questionData.a;
+        answerText.classList.add('hidden');
+        playerSelect.value = ""; // Reset dropdown
+        
+        questionModal.classList.remove('modal-hidden');
+    }
+
+    /**
+     * Handles correct/incorrect answer button clicks.
+     * @param {boolean} wasCorrect - True if the "Correct" button was clicked.
+     */
+    function handleAnswer(wasCorrect) {
+        const selectedPlayer = playerSelect.value;
+        if (!selectedPlayer) {
+            alert("Please select the student who answered.");
+            return;
+        }
+        
+        const teamIndex = teams.findIndex(team => team.members.includes(selectedPlayer));
+        if (teamIndex === -1) return; // Should not happen
+
+        const points = currentQuestionData.points;
+        const scoreChange = wasCorrect ? points : -points;
+        teams[teamIndex].score += scoreChange;
+        
+        updateScoreboard();
+
+        if (wasCorrect) {
+            answerLog.push({
+                player: selectedPlayer,
+                question: currentQuestionData.question,
+                points: points
+            });
+            alert(`${selectedPlayer} gets ${points} points for Team ${teamIndex + 1}!`);
+        } else {
+            alert(`Team ${teamIndex + 1} loses ${points} points.`);
+        }
+        
+        questionModal.classList.add('modal-hidden'); // Close modal after answering
+    }
+
+    /**
+     * Displays the log of correct answers.
+     */
+    function showLog() {
+        if (answerLog.length === 0) {
+            logContent.textContent = "No correct answers have been logged yet.";
+        } else {
+            const logText = answerLog.map(entry => 
+                `PLAYER: ${entry.player}\nQUESTION: ${entry.question}\nPOINTS: ${entry.points}\n--------------------`
+            ).join('\n');
+            logContent.textContent = logText;
+        }
+        logModal.classList.remove('modal-hidden');
+    }
+
+    /**
+     * Copies the formatted log text to the clipboard.
+     */
+    function copyLog() {
+        navigator.clipboard.writeText(logContent.textContent).then(() => {
+            alert("Log copied to clipboard!");
+        }, () => {
+            alert("Failed to copy log.");
+        });
+    }
+
+</script>
+
+</body>
+</html>
