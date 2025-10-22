@@ -56,6 +56,24 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
         .setup-section { margin-bottom: 20px; }
+        .dataset-select {
+            width: 90%;
+            padding: 10px;
+            border: 2px solid var(--card-bg);
+            border-radius: 5px;
+            background-color: var(--primary-bg);
+            color: var(--text-light);
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .dataset-description {
+            font-style: italic;
+            color: var(--text-light);
+            margin: 0 auto;
+            max-width: 90%;
+        }
+
         #class-list {
             width: 90%;
             height: 150px;
@@ -115,7 +133,13 @@
         #game-header h1 { margin: 10px 0; }
 
         /* Game Board Styles */
-        #game-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
+        #game-board {
+            --category-count: 5;
+            display: grid;
+            grid-template-columns: repeat(var(--category-count), 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
         .category-title { background-color: var(--accent-blue); font-weight: bold; font-size: 1rem; padding: 10px; border-radius: 5px; display: flex; justify-content: center; align-items: center; min-height: 70px; }
         .question-tile { background-color: var(--card-bg); color: var(--accent-yellow); font-size: 2rem; font-weight: bold; cursor: pointer; border-radius: 5px; display: flex; justify-content: center; align-items: center; height: 90px; transition: transform 0.2s; }
         .question-tile:hover { transform: scale(1.05); }
@@ -158,7 +182,14 @@
 
 <div id="game-container">
     <div id="setup-screen" class="screen active">
-        <h1>Physics Jeopardy!</h1>
+        <h1 id="setup-title">Physics Jeopardy!</h1>
+        <div class="setup-section">
+            <h2>0. Choose Dataset</h2>
+            <select id="dataset-select" class="dataset-select" disabled>
+                <option>Loading datasets...</option>
+            </select>
+            <p id="dataset-description" class="dataset-description"></p>
+        </div>
         <div class="setup-section">
             <h2>1. Paste Class List</h2>
             <textarea id="class-list" placeholder="Paste one name per line..."></textarea>
@@ -178,7 +209,7 @@
 
     <div id="game-screen" class="screen">
         <header id="game-header">
-            <h1>Y7 Physics Jeopardy</h1>
+            <h1 id="game-title">Y7 Physics Jeopardy</h1>
             <button id="view-log-btn">View Log</button>
         </header>
         <div id="game-board"></div>
@@ -216,18 +247,6 @@
 </div>
     
 <script>
-    // --- TRIVIA DATA ---
-    const gameData = {
-        categories: ["Forces & Motion", "Energy", "Light & Sound", "Space", "Electricity"],
-        questions: [
-            { q: "This force pulls objects towards the center of the Earth.", a: "What is gravity?" }, { q: "The unit used to measure force is named after this famous scientist.", a: "Who is Isaac Newton?" }, { q: "This is the resistance an object has to a change in its state of motion.", a: "What is inertia?" }, { q: "This type of friction occurs between air and a moving object.", a: "What is air resistance (or drag)?" }, { q: "What is the formula for calculating speed?", a: "What is Speed = Distance ÷ Time?" },
-            { q: "This is the energy of a moving object.", a: "What is kinetic energy?" }, { q: "This is stored energy, ready to be used.", a: "What is potential energy?" }, { q: "Energy cannot be created or destroyed, only transferred. This is the law of...", a: "What is the Conservation of Energy?" }, { q: "Fossil fuels are an example of this type of energy resource.", a: "What is a non-renewable resource?" }, { q: "The Sun provides the Earth with these two main forms of energy.", a: "What are light and heat energy?" },
-            { q: "This is how light travels from a source.", a: "In straight lines." }, { q: "Sound is caused by these.", a: "What are vibrations?" }, { q: "This is when light bounces off a surface, like a mirror.", a: "What is reflection?" }, { q: "Sound travels fastest through which state of matter: solid, liquid, or gas?", a: "What is a solid?" }, { q: "This splits white light into the colors of the rainbow.", a: "What is a prism?" },
-            { q: "Our solar system is in this galaxy.", a: "What is the Milky Way?" }, { q: "This is the name for a natural satellite that orbits a planet.", a: "What is a moon?" }, { q: "How long does it take for the Earth to orbit the Sun once?", a: "What is one year (or 365.25 days)?" }, { q: "A piece of rock or metal that burns up upon entering Earth's atmosphere is called this.", a: "What is a meteor (or shooting star)?" }, { q: "What causes the seasons on Earth?", a: "What is the tilt of the Earth's axis?" },
-            { q: "This is the flow of electrons through a conductor.", a: "What is an electric current?" }, { q: "A material that does not allow electricity to pass through it is called this.", a: "What is an insulator?" }, { q: "For a light bulb to light up, it must be part of a complete or _______ circuit.", a: "What is a closed circuit?" }, { q: "This device can be used to open or close a circuit.", a: "What is a switch?" }, { q: "Two north poles of a magnet will do this when brought together.", a: "What is repel each other?" },
-        ]
-    };
-
     // --- DOM ELEMENT REFERENCES ---
     const setupScreen = document.getElementById('setup-screen');
     const gameScreen = document.getElementById('game-screen');
@@ -235,7 +254,11 @@
     const startGameBtn = document.getElementById('start-game-btn');
     const classListInput = document.getElementById('class-list');
     const teamAssignmentsDiv = document.getElementById('team-assignments');
-    
+    const datasetSelect = document.getElementById('dataset-select');
+    const datasetDescription = document.getElementById('dataset-description');
+    const setupTitle = document.getElementById('setup-title');
+    const gameTitle = document.getElementById('game-title');
+
     const gameBoard = document.getElementById('game-board');
     const scoreboard = document.getElementById('scoreboard');
 
@@ -261,13 +284,16 @@
     let allPlayersSorted = [];
     let answerLog = [];
     let currentQuestionData = {};
-    const pointValues = [100, 200, 300, 400, 500];
+    let datasetConfig = null;
+    let datasetPointValues = [];
+    let datasetManifest = [];
 
     // --- EVENT LISTENERS ---
     sortTeamsBtn.addEventListener('click', sortStudentsIntoTeams);
     startGameBtn.addEventListener('click', startGame);
     gameBoard.addEventListener('click', handleTileClick);
-    
+    datasetSelect.addEventListener('change', handleDatasetSelection);
+
     // Question Modal Listeners
     revealAnswerBtn.addEventListener('click', () => answerText.classList.remove('hidden'));
     closeModalBtn.addEventListener('click', () => questionModal.classList.add('modal-hidden'));
@@ -279,7 +305,106 @@
     closeLogBtn.addEventListener('click', () => logModal.classList.add('modal-hidden'));
     copyLogBtn.addEventListener('click', copyLog);
 
+    // --- INITIALIZATION ---
+    loadDatasetManifest();
+
     // --- FUNCTIONS ---
+
+    async function loadDatasetManifest() {
+        try {
+            const response = await fetch('../datasets/index.json');
+            if (!response.ok) {
+                throw new Error(`Manifest request failed with status ${response.status}`);
+            }
+            const manifest = await response.json();
+            datasetManifest = manifest.datasets || [];
+            populateDatasetSelect();
+        } catch (error) {
+            console.error('Failed to load dataset manifest:', error);
+            datasetSelect.innerHTML = '<option value="">Unable to load datasets</option>';
+        } finally {
+            datasetSelect.disabled = datasetManifest.length === 0;
+        }
+    }
+
+    function populateDatasetSelect() {
+        datasetSelect.innerHTML = '<option value="">Select a dataset...</option>';
+        datasetManifest.forEach(dataset => {
+            const option = document.createElement('option');
+            option.value = dataset.id;
+            option.textContent = dataset.name;
+            datasetSelect.appendChild(option);
+        });
+    }
+
+    async function handleDatasetSelection() {
+        const selectedId = datasetSelect.value;
+        datasetDescription.textContent = '';
+        datasetConfig = null;
+        datasetPointValues = [];
+        clearBoard();
+        updateStartButtonState();
+
+        if (!selectedId) {
+            return;
+        }
+
+        const datasetInfo = datasetManifest.find(ds => ds.id === selectedId);
+        if (!datasetInfo) {
+            alert('Selected dataset could not be found.');
+            return;
+        }
+
+        try {
+            const response = await fetch(datasetInfo.path);
+            if (!response.ok) {
+                throw new Error(`Dataset request failed with status ${response.status}`);
+            }
+            const data = await response.json();
+            validateDataset(data);
+            datasetConfig = data;
+            datasetPointValues = [...data.pointValues];
+            setupTitle.textContent = data.title;
+            gameTitle.textContent = data.title;
+            datasetDescription.textContent = data.description || '';
+            clearBoard();
+            updateStartButtonState();
+        } catch (error) {
+            console.error('Failed to load dataset:', error);
+            alert('There was a problem loading that dataset. Please try a different one.');
+            datasetSelect.value = '';
+        }
+    }
+
+    function clearBoard() {
+        gameBoard.innerHTML = '';
+        const defaultCount = datasetConfig ? datasetConfig.categories.length : 5;
+        gameBoard.style.setProperty('--category-count', defaultCount);
+    }
+
+    function validateDataset(data) {
+        if (!data || typeof data !== 'object') {
+            throw new Error('Dataset is not a valid object.');
+        }
+        if (!Array.isArray(data.pointValues) || data.pointValues.length === 0) {
+            throw new Error('Dataset must include point values.');
+        }
+        if (!Array.isArray(data.categories) || data.categories.length === 0) {
+            throw new Error('Dataset must include categories.');
+        }
+        data.categories.forEach((category, index) => {
+            if (!category || typeof category.name !== 'string') {
+                throw new Error(`Category at position ${index + 1} is missing a name.`);
+            }
+            if (!Array.isArray(category.questions) || category.questions.length !== data.pointValues.length) {
+                throw new Error(`Category "${category.name}" must have ${data.pointValues.length} questions.`);
+            }
+        });
+    }
+
+    function updateStartButtonState() {
+        startGameBtn.disabled = !(teams.length > 0 && datasetConfig);
+    }
 
     /**
      * Shuffles an array in place.
@@ -323,7 +448,7 @@
             teamAssignmentsDiv.appendChild(teamDiv);
         });
 
-        startGameBtn.disabled = false;
+        updateStartButtonState();
     }
 
     /**
@@ -332,6 +457,10 @@
     function startGame() {
         if (teams.length === 0) {
             alert("Please create teams first!");
+            return;
+        }
+        if (!datasetConfig) {
+            alert('Please choose a dataset before starting the game.');
             return;
         }
         setupScreen.classList.remove('active');
@@ -346,33 +475,38 @@
             playerSelect.appendChild(option);
         });
 
+        answerLog = [];
         buildBoard();
         updateScoreboard();
     }
-    
+
     /**
      * Creates the game board grid in the DOM.
      */
     function buildBoard() {
+        if (!datasetConfig) {
+            return;
+        }
         gameBoard.innerHTML = '';
-        gameData.categories.forEach(cat => {
+        gameBoard.style.setProperty('--category-count', datasetConfig.categories.length);
+        datasetConfig.categories.forEach(cat => {
             const categoryDiv = document.createElement('div');
             categoryDiv.classList.add('category-title');
-            categoryDiv.textContent = cat;
+            categoryDiv.textContent = cat.name;
             gameBoard.appendChild(categoryDiv);
         });
 
-        for (let i = 0; i < pointValues.length; i++) {
-            for (let j = 0; j < gameData.categories.length; j++) {
-                const questionIndex = j * pointValues.length + i;
+        datasetPointValues.forEach((pointValue, questionIndex) => {
+            datasetConfig.categories.forEach((category, categoryIndex) => {
                 const tile = document.createElement('div');
                 tile.classList.add('question-tile');
-                tile.textContent = `$${pointValues[i]}`;
+                tile.textContent = `$${pointValue}`;
+                tile.dataset.pointValue = pointValue;
+                tile.dataset.categoryIndex = categoryIndex;
                 tile.dataset.questionIndex = questionIndex;
-                tile.dataset.pointValue = pointValues[i];
                 gameBoard.appendChild(tile);
-            }
-        }
+            });
+        });
     }
     
     /**
@@ -404,22 +538,27 @@
         tile.classList.add('answered');
         tile.textContent = '';
         
-        const questionIndex = parseInt(tile.dataset.questionIndex);
-        const pointValue = parseInt(tile.dataset.pointValue);
-        const questionData = gameData.questions[questionIndex];
-        
+        const categoryIndex = parseInt(tile.dataset.categoryIndex, 10);
+        const questionIndex = parseInt(tile.dataset.questionIndex, 10);
+        const pointValue = parseInt(tile.dataset.pointValue, 10);
+        const category = datasetConfig.categories[categoryIndex];
+        const questionData = category.questions[questionIndex];
+
         // Store current question info for logging and scoring
         currentQuestionData = {
-            question: questionData.q,
-            points: pointValue
+            question: questionData.question,
+            answer: questionData.answer,
+            points: pointValue,
+            category: category.name,
+            datasetTitle: datasetConfig.title
         };
 
         // Populate and show modal
-        questionText.textContent = questionData.q;
-        answerText.textContent = questionData.a;
+        questionText.textContent = questionData.question;
+        answerText.textContent = questionData.answer;
         answerText.classList.add('hidden');
         playerSelect.value = ""; // Reset dropdown
-        
+
         questionModal.classList.remove('modal-hidden');
     }
 
@@ -447,13 +586,15 @@
             answerLog.push({
                 player: selectedPlayer,
                 question: currentQuestionData.question,
+                category: currentQuestionData.category,
+                datasetTitle: currentQuestionData.datasetTitle,
                 points: points
             });
             alert(`${selectedPlayer} gets ${points} points for Team ${teamIndex + 1}!`);
         } else {
             alert(`Team ${teamIndex + 1} loses ${points} points.`);
         }
-        
+
         questionModal.classList.add('modal-hidden'); // Close modal after answering
     }
 
@@ -464,8 +605,8 @@
         if (answerLog.length === 0) {
             logContent.textContent = "No correct answers have been logged yet.";
         } else {
-            const logText = answerLog.map(entry => 
-                `PLAYER: ${entry.player}\nQUESTION: ${entry.question}\nPOINTS: ${entry.points}\n--------------------`
+            const logText = answerLog.map(entry =>
+                `PLAYER: ${entry.player}\nQUESTION: ${entry.question}\nCATEGORY: ${entry.category}\nDATASET: ${entry.datasetTitle}\nPOINTS: ${entry.points}\n--------------------`
             ).join('\n');
             logContent.textContent = logText;
         }

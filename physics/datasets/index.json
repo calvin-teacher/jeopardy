@@ -1,0 +1,14 @@
+{
+  "datasets": [
+    {
+      "id": "y7-physics",
+      "name": "Year 7 Physics Review",
+      "path": "../datasets/y7-physics.json"
+    },
+    {
+      "id": "cfu-physics-basics",
+      "name": "Check for Understanding: Core Concepts",
+      "path": "../datasets/check-for-understanding.json"
+    }
+  ]
+}
