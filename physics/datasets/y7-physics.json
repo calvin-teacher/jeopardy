@@ -1,0 +1,58 @@
+{
+  "id": "y7-physics",
+  "title": "Y7 Physics Jeopardy",
+  "description": "Full review set covering forces, energy, light, space, and electricity.",
+  "pointValues": [100, 200, 300, 400, 500],
+  "categories": [
+    {
+      "name": "Forces & Motion",
+      "questions": [
+        {"question": "This force pulls objects towards the center of the Earth.", "answer": "What is gravity?"},
+        {"question": "The unit used to measure force is named after this famous scientist.", "answer": "Who is Isaac Newton?"},
+        {"question": "This is the resistance an object has to a change in its state of motion.", "answer": "What is inertia?"},
+        {"question": "This type of friction occurs between air and a moving object.", "answer": "What is air resistance (or drag)?"},
+        {"question": "What is the formula for calculating speed?", "answer": "What is Speed = Distance ÷ Time?"}
+      ]
+    },
+    {
+      "name": "Energy",
+      "questions": [
+        {"question": "This is the energy of a moving object.", "answer": "What is kinetic energy?"},
+        {"question": "This is stored energy, ready to be used.", "answer": "What is potential energy?"},
+        {"question": "Energy cannot be created or destroyed, only transferred. This is the law of...", "answer": "What is the Conservation of Energy?"},
+        {"question": "Fossil fuels are an example of this type of energy resource.", "answer": "What is a non-renewable resource?"},
+        {"question": "The Sun provides the Earth with these two main forms of energy.", "answer": "What are light and heat energy?"}
+      ]
+    },
+    {
+      "name": "Light & Sound",
+      "questions": [
+        {"question": "This is how light travels from a source.", "answer": "In straight lines."},
+        {"question": "Sound is caused by these.", "answer": "What are vibrations?"},
+        {"question": "This is when light bounces off a surface, like a mirror.", "answer": "What is reflection?"},
+        {"question": "Sound travels fastest through which state of matter: solid, liquid, or gas?", "answer": "What is a solid?"},
+        {"question": "This splits white light into the colors of the rainbow.", "answer": "What is a prism?"}
+      ]
+    },
+    {
+      "name": "Space",
+      "questions": [
+        {"question": "Our solar system is in this galaxy.", "answer": "What is the Milky Way?"},
+        {"question": "This is the name for a natural satellite that orbits a planet.", "answer": "What is a moon?"},
+        {"question": "How long does it take for the Earth to orbit the Sun once?", "answer": "What is one year (or 365.25 days)?"},
+        {"question": "A piece of rock or metal that burns up upon entering Earth's atmosphere is called this.", "answer": "What is a meteor (or shooting star)?"},
+        {"question": "What causes the seasons on Earth?", "answer": "What is the tilt of the Earth's axis?"}
+      ]
+    },
+    {
+      "name": "Electricity",
+      "questions": [
+        {"question": "This is the flow of electrons through a conductor.", "answer": "What is an electric current?"},
+        {"question": "A material that does not allow electricity to pass through it is called this.", "answer": "What is an insulator?"},
+        {"question": "For a light bulb to light up, it must be part of a complete or _______ circuit.", "answer": "What is a closed circuit?"},
+        {"question": "This device can be used to open or close a circuit.", "answer": "What is a switch?"},
+        {"question": "Two north poles of a magnet will do this when brought together.", "answer": "What is repel each other?"}
+      ]
+    }
+  ]
+}
