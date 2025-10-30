@@ -176,4 +176,317 @@
         }
         .correct-btn { background-color: #34c95a; color: white; }
         .correct-btn:hover { background-color: #2aaa4c; }
-        .incorrect-btn { background-
+        .incorrect-btn { background-color: #c93434; color: white; }
+        .incorrect-btn:hover { background-color: #a22a2a; }
+    </style>
+</head>
+<body>
+
+    <h1>My E-C-A Review Game</h1>
+    
+    <div id="team-setup">
+        <h2>Enter Team Names</h2>
+        <p>One name per line, or separate with commas.</p>
+        <textarea id="team-names-input">Team 1, Team 2</textarea>
+        <button id="start-game-btn">Start Game</button>
+    </div>
+
+    <div id="team-display">
+        </div>
+    
+    <div id="game-controls">
+        <button id="download-csv-btn" class="modal-btn">Download Results (CSV)</button>
+    </div>
+
+    <div id="game-board"></div>
+
+    <div id="question-modal">
+        <div class="modal-content">
+            <p id="question-text">Here is the question?</p>
+            <p id="answer-text">Here is the answer!</p>
+            
+            <button id="show-answer-btn" class="modal-btn">Show Answer</button>
+
+            <div id="scoring-buttons">
+                </div>
+            
+            <button id="no-answer-btn" class="modal-btn">No Answer (Close)</button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- 1. DATA AND CONFIG ---
+        const allQuestions = [
+            // ... (Same data as before) ...
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is f(x) = 2x + 2 for f(2)?", a: "f(2) = 6", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "A second E-level question for 5.1", a: "The answer", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "A third E-level question for 5.1", a: "The answer", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is a 'domain'?", a: "All possible x-values", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is a 'range'?", a: "All possible y-values", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "Given f(x) = x^2, describe the transformation of f(x-2)+1", a: "2 units right, 1 unit up", level: "A" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve 2x = 8", a: "x = 4", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve 3x + 1 = 10", a: "x = 3", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Factor x^2 - 4", a: "(x-2)(x+2)", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve x^2 + 5x + 6 = 0", a: "x = -2 or x = -3", level: "A" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "What is the quadratic formula?", a: "x = [-b ± sqrt(b^2-4ac)] / 2a", level: "A" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.3 Geometry", q: "Area of a triangle?", a: "base * height / 2", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.3 Geometry", q: "Pythagorean theorem?", a: "a^2 + b^2 = c^2", level: "C" },
+        ];
+
+        const categoriesForThisGame = [
+            "5.1 Functions",
+            "5.2 Algebra",
+            "5.3 Geometry"
+        ];
+        
+        const points = { E: 1, C: 3, A: 5 };
+        
+        let currentButton = null;
+        let teams = []; 
+        let gameLog = []; // Our log for the CSV
+
+        // --- 2. GAME STARTUP ---
+        
+        function startGame() {
+            const teamInput = document.getElementById('team-names-input').value;
+            const teamNames = teamInput.split(/[\n,]+/)
+                                      .map(name => name.trim())
+                                      .filter(name => name.length > 0);
+            
+            if (teamNames.length === 0) {
+                alert("Please enter at least one team name!");
+                return;
+            }
+
+            teams = teamNames.map(name => ({ name: name, score: 0 }));
+            
+            updateScoreboard();
+
+            // Hide setup and show the game
+            document.getElementById('team-setup').style.display = 'none';
+            document.getElementById('team-display').style.display = 'flex';
+            document.getElementById('game-board').style.display = 'flex';
+            
+            // NEW: Show the game controls (download button)
+            document.getElementById('game-controls').style.display = 'block';
+        }
+        
+        function updateScoreboard() {
+            const display = document.getElementById('team-display');
+            display.innerHTML = '';
+            
+            teams.forEach(team => {
+                const card = document.createElement('div');
+                card.classList.add('team-score-card');
+                
+                const nameEl = document.createElement('p');
+                nameEl.classList.add('team-name');
+                nameEl.textContent = team.name;
+                
+                const scoreEl = document.createElement('p');
+                scoreEl.classList.add('team-score');
+                scoreEl.textContent = team.score;
+                
+                card.appendChild(nameEl);
+                card.appendChild(scoreEl);
+                display.appendChild(card);
+            });
+        }
+
+        // --- 3. BOARD-BUILDING ---
+        // ... (buildBoard() and createBucket() are identical) ...
+        function buildBoard() {
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = ''; 
+            categoriesForThisGame.forEach(categoryName => {
+                const column = document.createElement('div');
+                column.classList.add('category-column');
+                const header = document.createElement('div');
+                header.classList.add('category-header');
+                header.textContent = categoryName;
+                column.appendChild(header);
+                const categoryQuestions = allQuestions.filter(q => q.subchapter === categoryName);
+                const aQuestions = categoryQuestions.filter(q => q.level === 'A');
+                const cQuestions = categoryQuestions.filter(q => q.level === 'C');
+                const eQuestions = categoryQuestions.filter(q => q.level === 'E');
+                column.appendChild( createBucket(aQuestions, 'A', '🌶🌶🌶', 'level-a') );
+                column.appendChild( createBucket(cQuestions, 'C', '🌶🌶', 'level-c') );
+                column.appendChild( createBucket(eQuestions, 'E', '🌶', 'level-e') );
+                gameBoard.appendChild(column);
+            });
+        }
+        function createBucket(questions, level, icon, cssClass) {
+            const bucket = document.createElement('div');
+            bucket.classList.add('level-bucket', cssClass);
+            const bucketHeader = document.createElement('div');
+            bucketHeader.classList.add('level-header');
+            bucketHeader.textContent = icon;
+            bucket.appendChild(bucketHeader);
+            const grid = document.createElement('div');
+            grid.classList.add('question-grid');
+            questions.forEach((question, index) => {
+                const button = document.createElement('button');
+                button.classList.add('question-button');
+                button.textContent = index + 1; 
+                button.dataset.question = question.q;
+                button.dataset.answer = question.a;
+                button.dataset.points = points[level];
+                button.dataset.level = level;
+                button.addEventListener('click', handleQuestionClick);
+                grid.appendChild(button);
+            });
+            bucket.appendChild(grid);
+            return bucket;
+        }
+
+        // --- 4. MODAL AND SCORING LOGIC ---
+        // ... (handleQuestionClick, showAnswer, handleScore are identical) ...
+        function handleQuestionClick(event) {
+            currentButton = event.target;
+            const q = currentButton.dataset.question;
+            const a = currentButton.dataset.answer;
+            document.getElementById('question-text').textContent = q;
+            document.getElementById('answer-text').textContent = a;
+            document.getElementById('answer-text').style.display = 'none';
+            document.getElementById('show-answer-btn').style.display = 'block';
+            document.getElementById('scoring-buttons').style.display = 'none';
+            document.getElementById('no-answer-btn').style.display = 'none';
+            document.getElementById('scoring-buttons').innerHTML = '';
+            document.getElementById('question-modal').style.display = 'flex';
+        }
+        function showAnswer() {
+            document.getElementById('answer-text').style.display = 'block';
+            document.getElementById('show-answer-btn').style.display = 'none';
+            document.getElementById('scoring-buttons').style.display = 'block';
+            document.getElementById('no-answer-btn').style.display = 'block';
+            const scoringDiv = document.getElementById('scoring-buttons');
+            teams.forEach((team, index) => {
+                const row = document.createElement('div');
+                row.classList.add('team-scoring-row');
+                const name = document.createElement('span');
+                name.classList.add('scoring-team-name');
+                name.textContent = team.name;
+                const btnDiv = document.createElement('div');
+                const correctBtn = document.createElement('button');
+                correctBtn.classList.add('scoring-btn', 'correct-btn');
+                correctBtn.textContent = 'Correct';
+                correctBtn.onclick = () => handleScore(index, true);
+                const incorrectBtn = document.createElement('button');
+                incorrectBtn.classList.add('scoring-btn', 'incorrect-btn');
+                incorrectBtn.textContent = 'Incorrect';
+                incorrectBtn.onclick = () => handleScore(index, false);
+                btnDiv.appendChild(correctBtn);
+                btnDiv.appendChild(incorrectBtn);
+                row.appendChild(name);
+                row.appendChild(btnDiv);
+                scoringDiv.appendChild(row);
+            });
+        }
+        function handleScore(teamIndex, isCorrect) {
+            const teamName = teams[teamIndex].name;
+            const pts = parseInt(currentButton.dataset.points);
+            const question = currentButton.dataset.question;
+            const level = currentButton.dataset.level;
+            if (isCorrect) {
+                teams[teamIndex].score += pts;
+                gameLog.push({ team: teamName, question, level, status: "Correct", points: pts });
+            } else {
+                gameLog.push({ team: teamName, question, level, status: "Incorrect", points: 0 });
+            }
+            updateScoreboard();
+            closeModal(true);
+        }
+        function handleNoAnswer() {
+            gameLog.push({
+                team: "None",
+                question: currentButton.dataset.question,
+                level: currentButton.dataset.level,
+                status: "No Answer",
+                points: 0
+            });
+            closeModal(false);
+        }
+        function closeModal(wasAnswered) {
+            document.getElementById('question-modal').style.display = 'none';
+            if (currentButton) {
+                currentButton.classList.add('disabled');
+                currentButton.disabled = true;
+                currentButton = null;
+            }
+        }
+        
+        // --- 5. NEW: CSV EXPORT FUNCTION ---
+        
+        /**
+         * Helper function to safely escape content for a CSV file.
+         * It wraps the string in double quotes and escapes any existing double quotes.
+         */
+        function escapeCSV(str) {
+            return `"${String(str).replace(/"/g, '""')}"`;
+        }
+
+        /**
+         * Runs when "Download Results" is clicked
+         */
+        function downloadCSV() {
+            if (gameLog.length === 0) {
+                alert("No results to download yet!");
+                return;
+            }
+
+            // Define the CSV headers
+            const headers = ["Team", "Question", "Level", "Status", "Points"];
+            
+            // Convert the gameLog data into CSV rows
+            const rows = gameLog.map(row => [
+                escapeCSV(row.team),
+                escapeCSV(row.question),
+                escapeCSV(row.level),
+                escapeCSV(row.status),
+                row.points // Numbers don't need escaping
+            ].join(',')); // Join cells with a comma
+
+            // Combine headers and rows, separated by newlines
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            
+            // Create a "Blob" (a file-like object in memory)
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            // Create a temporary, invisible link
+            const link = document.createElement("a");
+            if (link.download !== undefined) { // Check if browser supports 'download'
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "game_results.csv"); // Set the filename
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                
+                // Simulate a click on the link to start the download
+                link.click();
+                
+                // Clean up the temporary link
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        
+        // --- 6. INITIALIZE THE GAME ---
+        
+        // Build the board (it's hidden, but ready)
+        buildBoard();
+        
+        // Add listeners for the modal buttons
+        document.getElementById('show-answer-btn').addEventListener('click', showAnswer);
+        document.getElementById('no-answer-btn').addEventListener('click', handleNoAnswer);
+        
+        // Add listener for the "Start Game" button
+        document.getElementById('start-game-btn').addEventListener('click', startGame);
+        
+        // NEW: Add listener for the CSV download button
+        document.getElementById('download-csv-btn').addEventListener('click', downloadCSV);
+
+    </script>
+</body>
+</html>
