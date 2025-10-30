@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-C-A Game</title>
+    
+    <style>
+        /* --- Basic Setup --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #004a99;
+        }
+
+        /* --- Game Board --- */
+        #game-board {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            /* Allow the board to wrap if too many categories */
+            flex-wrap: wrap; 
+        }
+
+        /* --- Category Column --- */
+        .category-column {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 200px;
+            padding-bottom: 10px;
+            flex-shrink: 0;
+            /* Ensure columns are stacked vertically */
+            display: flex;
+            flex-direction: column; 
+        }
+
+        .category-header {
+            background-color: #004a99;
+            color: white;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        /* --- Level Buckets (🌶, 🌶🌶, 🌶🌶🌶) --- */
+        .level-bucket {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 6px;
+            /* This ensures buckets fill the column */
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .level-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        /* Color-coding the buckets! */
+        .level-a { background-color: #c93434; } /* Red */
+        .level-c { background-color: #347ac9; } /* Blue */
+        .level-e { background-color: #34c95a; } /* Green */
+        
+        /* --- Question Buttons --- */
+        .question-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            /* This makes the grid take up available space */
+            flex-grow: 1; 
+            align-content: flex-start; /* Aligns buttons to the top */
+        }
+        
+        .question-button {
+            width: 50px;
+            height: 50px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .question-button:hover:not(.disabled) {
+            background-color: #e0e0e0;
+            border-color: #aaa;
+        }
+
+        .question-button.disabled {
+            background-color: #999;
+            color: #777;
+            cursor: not-allowed;
+            border-color: #888;
+            opacity: 0.6;
+        }
+
+        #team-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>My E-C-A Review Game</h1>
+
+    <div id="game-board"></div>
+
+    <div id="team-section">
+        </div>
+
+    <div id="question-modal" style="display: none;">
+        </div>
+
+
+    <script>
+        // --- 1. PLACEHOLDER DATA ---
+        // This is your "database". You can replace this with your real questions.
+        const allQuestions = [
+            // Category 1
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is f(x) = 2x + 2 for f(2)?", a: "f(2) = 6", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "A second E-level question for 5.1", a: "The answer", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "A third E-level question for 5.1", a: "The answer", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is a 'domain'?", a: "All possible x-values", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "What is a 'range'?", a: "All possible y-values", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.1 Functions", q: "Given f(x) = x^2, describe the transformation of f(x-2)+1", a: "2 units right, 1 unit up", level: "A" },
+            
+            // Category 2
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve 2x = 8", a: "x = 4", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve 3x + 1 = 10", a: "x = 3", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Factor x^2 - 4", a: "(x-2)(x+2)", level: "C" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "Solve x^2 + 5x + 6 = 0", a: "x = -2 or x = -3", level: "A" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.2 Algebra", q: "What is the quadratic formula?", a: "x = [-b ± sqrt(b^2-4ac)] / 2a", level: "A" },
+            
+            // Category 3
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.3 Geometry", q: "Area of a triangle?", a: "base * height / 2", level: "E" },
+            { topic: "Math 1c", chapter: "Ch 5", subchapter: "5.3 Geometry", q: "Pythagorean theorem?", a: "a^2 + b^2 = c^2", level: "C" },
+        ];
+
+        // --- 2. GAME CONFIGURATION ---
+        // This array controls which categories appear and in what order.
+        // Just add the "subchapter" names you want to use.
+        const categoriesForThisGame = [
+            "5.1 Functions",
+            "5.2 Algebra",
+            "5.3 Geometry"
+            // Add a 4th category here and the board will just build it!
+        ];
+        
+        // Define our scoring
+        const points = {
+            E: 1,
+            C: 3,
+            A: 5
+        };
+
+        // --- 3. THE BOARD-BUILDING FUNCTION ---
+        function buildBoard() {
+            const gameBoard = document.getElementById('game-board');
+            // Clear any old content (like our hard-coded examples)
+            gameBoard.innerHTML = ''; 
+
+            // Loop over each category name in our config array
+            categoriesForThisGame.forEach(categoryName => {
+                
+                // --- Create the Column ---
+                const column = document.createElement('div');
+                column.classList.add('category-column');
+                
+                const header = document.createElement('div');
+                header.classList.add('category-header');
+                header.textContent = categoryName;
+                column.appendChild(header);
+
+                // --- Get all questions for THIS category ---
+                const categoryQuestions = allQuestions.filter(q => q.subchapter === categoryName);
+                
+                // --- Filter questions by level ---
+                const aQuestions = categoryQuestions.filter(q => q.level === 'A');
+                const cQuestions = categoryQuestions.filter(q => q.level === 'C');
+                const eQuestions = categoryQuestions.filter(q => q.level === 'E');
+
+                // --- Create the Buckets (A, C, E) ---
+                // We create them in A, C, E order to match your 🌶🌶🌶, 🌶🌶, 🌶 layout
+                
+                // A-Level Bucket (🌶🌶🌶)
+                column.appendChild(
+                    createBucket(aQuestions, 'A', '🌶🌶🌶', 'level-a')
+                );
+                
+                // C-Level Bucket (🌶🌶)
+                column.appendChild(
+                    createBucket(cQuestions, 'C', '🌶🌶', 'level-c')
+                );
+                
+                // E-Level Bucket (🌶)
+                column.appendChild(
+                    createBucket(eQuestions, 'E', '🌶', 'level-e')
+                );
+
+                // Add the finished column to the board
+                gameBoard.appendChild(column);
+            });
+        }
+
+        /**
+         * Helper function to create a "level-bucket" (e.g., the A-level bucket)
+         * @param {Array} questions - The array of questions for this bucket
+         * @param {String} level - 'E', 'C', or 'A'
+         * @param {String} icon - '🌶', '🌶🌶', or '🌶🌶🌶'
+         * @param {String} cssClass - 'level-e', 'level-c', or 'level-a'
+         */
+        function createBucket(questions, level, icon, cssClass) {
+            const bucket = document.createElement('div');
+            bucket.classList.add('level-bucket', cssClass);
+
+            const bucketHeader = document.createElement('div');
+            bucketHeader.classList.add('level-header');
+            bucketHeader.textContent = icon;
+            bucket.appendChild(bucketHeader);
+
+            const grid = document.createElement('div');
+            grid.classList.add('question-grid');
+
+            // Create a button for each question
+            questions.forEach((question, index) => {
+                const button = document.createElement('button');
+                button.classList.add('question-button');
+                button.textContent = index + 1; // Number them 1, 2, 3...
+
+                // --- This is the most important part! ---
+                // We store the question data directly on the button
+                // This makes it easy to retrieve when clicked.
+                button.dataset.question = question.q;
+                button.dataset.answer = question.a;
+                button.dataset.points = points[level];
+                
+                // We'll add the click listener in the next step
+                // button.addEventListener('click', handleQuestionClick);
+                
+                grid.appendChild(button);
+            });
+
+            bucket.appendChild(grid);
+            return bucket;
+        }
+
+
+        // --- 4. RUN THE FUNCTION ---
+        // This line runs our function when the page loads.
+        buildBoard();
+
+    </script>
+
+</body>
+</html>
